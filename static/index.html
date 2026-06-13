@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>miniLLM - AI Inference Optimization & Benchmarking</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon"></div>
+                <div class="logo-text">
+                    <h1>miniLLM</h1>
+                    <span>Inference Runtime Eng</span>
+                </div>
+            </div>
+            
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-tab="training">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2zm0-4H7V7h10v2zm0 8H7v-2h10v2z"/></svg>
+                    Model Training
+                </button>
+                <button class="nav-btn" data-tab="playground">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                    Inference Playground
+                </button>
+                <button class="nav-btn" data-tab="architecture">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    Architecture Setup
+                </button>
+                <button class="nav-btn" data-tab="dataset">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                    Dataset Explorer
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="system-badge">
+                    <span class="badge-dot pulse"></span>
+                    <span id="system-device">Device: CPU</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-title">
+                    <h2 id="page-title">Model Training & Convergence Monitor</h2>
+                    <p id="page-subtitle">Train a character-level GPT on TinyStories and monitor validation loss curves.</p>
+                </div>
+                <div class="header-actions">
+                    <div id="connection-status" class="status-badge idle">
+                        <span class="status-dot"></span>
+                        <span id="status-text">Server Connected</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- TAB 1: Model Training -->
+            <section id="tab-training" class="tab-pane active">
+                <div class="grid-layout">
+                    <!-- Control Board -->
+                    <div class="card control-card">
+                        <h3>Training Configuration</h3>
+                        <p class="card-desc">Tune hyperparameters before starting the training run.</p>
+                        
+                        <div class="form-group">
+                            <label for="input-steps">Max Steps</label>
+                            <input type="number" id="input-steps" value="2000" min="100" max="10000" step="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="input-lr">Learning Rate</label>
+                            <input type="text" id="input-lr" value="0.0005">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-batch">Batch Size</label>
+                            <select id="input-batch">
+                                <option value="32">32</option>
+                                <option value="64" selected>64</option>
+                                <option value="128">128</option>
+                            </select>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button id="btn-train-start" class="btn btn-primary">Start Training</button>
+                            <button id="btn-train-pause" class="btn btn-secondary" disabled>Pause</button>
+                            <button id="btn-train-reset" class="btn btn-danger">Reset</button>
+                        </div>
+                    </div>
+
+                    <!-- Training Metrics Grid -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <span class="metric-label">Training Status</span>
+                            <span id="metric-status" class="metric-val text-idle">Idle</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Current Step</span>
+                            <span id="metric-step" class="metric-val">0 / 2000</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Latest Loss</span>
+                            <span id="metric-loss" class="metric-val">N/A</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Tokens / Sec</span>
+                            <span id="metric-throughput" class="metric-val">0.0</span>
+                        </div>
+                    </div>
+
+                    <!-- Convergence Graph -->
+                    <div class="card chart-card">
+                        <div class="chart-header">
+                            <h3>Real-time Loss Convergence</h3>
+                            <span class="badge">Live</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="lossChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: Inference Playground -->
+            <section id="tab-playground" class="tab-pane">
+                <div class="playground-layout">
+                    <!-- Left: Control Column -->
+                    <div class="card playground-controls">
+                        <h3>Runtime Configuration</h3>
+                        <p class="card-desc">Toggle KV Caching and Quantization to test latency and throughput trade-offs.</p>
+
+                        <div class="form-group">
+                            <label>Hardware Device</label>
+                            <select id="gen-device">
+                                <option value="cpu" selected>CPU</option>
+                                <option value="cuda">GPU (RTX 4060)</option>
+                            </select>
+                        </div>
+
+                        <!-- Optimization Switches -->
+                        <div class="switches-container">
+                            <div class="switch-item">
+                                <div class="switch-info">
+                                    <span class="switch-title">KV Caching</span>
+                                    <span class="switch-desc">Recycles key-value vectors for O(1) steps</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="gen-use-cache" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="switch-item">
+                                <div class="switch-info">
+                                    <span class="switch-title">INT8 Dynamic Quantization</span>
+                                    <span class="switch-desc">Reduces memory footprint by 75% (CPU only)</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="gen-quantized">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="gen-prompt">Starting Prompt</label>
+                            <textarea id="gen-prompt" placeholder="Once upon a time, a little girl named Lily...">Once upon a time, there was a little boy named Tim. He walked into</textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="gen-temp">Temperature: <span id="val-temp">0.8</span></label>
+                                <input type="range" id="gen-temp" min="0.1" max="1.5" step="0.1" value="0.8">
+                            </div>
+                            <div class="form-group half">
+                                <label for="gen-tokens">Max Tokens: <span id="val-tokens">150</span></label>
+                                <input type="range" id="gen-tokens" min="20" max="300" step="10" value="150">
+                            </div>
+                        </div>
+
+                        <button id="btn-generate" class="btn btn-primary btn-block">Generate Story</button>
+                    </div>
+
+                    <!-- Right: Console Column -->
+                    <div class="console-column">
+                        <!-- Typewriter Console -->
+                        <div class="card console-card">
+                            <div class="console-header">
+                                <div class="dots">
+                                    <span class="dot-red"></span>
+                                    <span class="dot-yellow"></span>
+                                    <span class="dot-green"></span>
+                                </div>
+                                <span class="console-title">Runtime Terminal - Output</span>
+                            </div>
+                            <div id="console-output" class="console-body empty">
+                                <span class="placeholder-text">Click "Generate Story" to run inference...</span>
+                            </div>
+                        </div>
+
+                        <!-- Runtime Performance Dashboard -->
+                        <div class="card perf-card">
+                            <h3>Runtime Performance Stats</h3>
+                            <div class="perf-grid">
+                                <div class="perf-stat">
+                                    <span class="perf-label">Model Size</span>
+                                    <span id="stat-size" class="perf-val">N/A</span>
+                                </div>
+                                <div class="perf-stat">
+                                    <span class="perf-label">TTFT (First Token)</span>
+                                    <span id="stat-ttft" class="perf-val">N/A</span>
+                                </div>
+                                <div class="perf-stat">
+                                    <span class="perf-label">Throughput</span>
+                                    <span id="stat-speed" class="perf-val">N/A</span>
+                                </div>
+                                <div class="perf-stat">
+                                    <span class="perf-label">Speedup</span>
+                                    <span id="stat-ratio" class="perf-val">N/A</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom: Comparison Benchmarking Table -->
+                <div class="card benchmark-card">
+                    <div class="benchmark-header">
+                        <div>
+                            <h3>Inference Benchmarking Matrix</h3>
+                            <p class="card-desc">Compare different compilation and cache settings on demand.</p>
+                        </div>
+                        <button id="btn-run-benchmark" class="btn btn-secondary">Run Benchmark Suite</button>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="benchmark-table">
+                            <thead>
+                                <tr>
+                                    <th>Configuration</th>
+                                    <th>Model Size</th>
+                                    <th>TTFT (ms)</th>
+                                    <th>Throughput (tokens/s)</th>
+                                    <th>Performance Gain</th>
+                                </tr>
+                            </thead>
+                            <tbody id="benchmark-results">
+                                <tr class="empty-row">
+                                    <td colspan="5">Click "Run Benchmark Suite" to compute metrics...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: System Architecture -->
+            <section id="tab-architecture" class="tab-pane">
+                <div class="card arch-card">
+                    <h3>miniLLM Codebase Architecture Map</h3>
+                    <p class="card-desc">Here is the technical design of the model and serving runtime.</p>
+                    
+                    <div class="architecture-map">
+                        <div class="arch-node">
+                            <h4>1. Input Layer</h4>
+                            <p>Character sequence is mapped into integers using a custom mapping schema inside `tokenizer.py`.</p>
+                        </div>
+                        <div class="arrow">↓</div>
+                        <div class="arch-node">
+                            <h4>2. Embedding Block</h4>
+                            <p>Transforms discrete IDs into active dense representations: `Token Embedding` + `Learned Absolute Position Embedding`.</p>
+                        </div>
+                        <div class="arrow">↓</div>
+                        <div class="arch-node highlight">
+                            <h4>3. 4x Transformer Layers (with KV Caching)</h4>
+                            <p>For each layer: Pre-LN → Causal Attention → Pre-LN → MLP (GELU). If Caching is enabled: Keys and Values are fetched and concatenated from `kv_cache.py`, reducing sequence calculation from O(T²) to O(1) attention steps.</p>
+                        </div>
+                        <div class="arrow">↓</div>
+                        <div class="arch-node">
+                            <h4>4. Projector Head</h4>
+                            <p>Output projections tied to embedding weights map vectors back to token vocabulary logits.</p>
+                        </div>
+                        <div class="arrow">↓</div>
+                        <div class="arch-node">
+                            <h4>5. Optimization Runtime</h4>
+                            <p>Using `quantize_dynamic` weights are packed into INT8 coefficients, shrinking disk footprints by 75% for CPU inference.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: Dataset Explorer -->
+            <section id="tab-dataset" class="tab-pane">
+                <div class="card dataset-card">
+                    <div class="dataset-header">
+                        <h3>TinyStories Dataset Preview</h3>
+                        <p class="card-desc">This is the vocabulary corpus (TinyStories validation set, 19.4 MB) used to fit tokenizer characters and train the network.</p>
+                    </div>
+                    <div class="dataset-viewer-container">
+                        <pre id="dataset-preview-text" class="dataset-preview">Loading dataset preview...</pre>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
